@@ -1,4 +1,6 @@
 -- 查询平均成绩大于等于60分的同学的学生编号和学生姓名和平均成绩:
+use test0402;
+
 select a.s_id,
        a.s_name,
        round(avg(b.s_score), 1) avg_score
