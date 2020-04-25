@@ -7,6 +7,8 @@ an daily exercise of hive
 
 [TOC]
 
+
+
 ### query syntax
 ```mysql
 SELECT [ALL | DISTINCT] select_expr, select_expr, ...
