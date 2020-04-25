@@ -11,10 +11,11 @@ an daily exercise of hive
 ```mysql
 SELECT [ALL | DISTINCT] select_expr, select_expr, ...
 FROM table_reference
-[WHERE condition]
-[GROUP BY col_list [HAVING condition]]
-[CLUSTER BY col_list | [DISTRIBUTE BY col_list][SORT BY | ORDER BY col_list]]
-[LIMIT number]
+[WHERE where_condition]
+[GROUP BY col_list]
+[ORDER BY col_list]
+[CLUSTER BY col_list | [DISTRIBUTE BY col_list] [SORT BY col_list]]
+[LIMIT [offset,] rows]
 ```
 
 ### 1 查询"01"课程比"02"课程成绩高的学生的信息及课程分数:
@@ -230,3 +231,303 @@ where
 -- 删除临时表
 drop table t1;
 ```
+
+### 9 查询至少有一门课与学号为"01"的同学所学课程相同的同学的信息:
+
+```mysql
+use test0402;
+
+-- 01同学所学课程id
+create table t1 as
+select
+    c_id
+from
+    score
+where
+    s_id = '01';
+
+-- 至少学过1门01同学所学课程的学生id
+create table t2 as
+select
+    distinct score.s_id
+from
+    score
+left join
+    t1
+on
+    t1.c_id = score.c_id
+where
+    t1.c_id is not null;
+
+select
+    st.*
+from
+    student st
+join
+    t2
+on
+    st.s_id = t2.s_id;
+
+-- 删除临时表
+drop table t1;
+drop table t2;
+```
+
+### 10 查询和"01"号的同学学习的课程完全相同的其他同学的信息:
+
+```mysql
+use test0402;
+
+-- 01同学所学课程id
+create table t1 as
+select
+    c_id
+from
+    score
+where
+    s_id = '01';
+
+-- 至少学过1门01同学所学课程的学生id
+create table t2 as
+select
+    score.s_id
+from
+    score
+join
+    t1
+on
+    t1.c_id = score.c_id
+group by
+    score.s_id
+having
+    count(*) = (select count(*) from t1);
+
+select
+    st.*
+from
+    student st
+join
+    t2
+on
+    st.s_id = t2.s_id;
+
+-- 删除临时表
+drop table t1;
+drop table t2;
+```
+
+### 11 没学过张三老师课程的学生id
+
+```mysql
+select s_name
+from student
+where s_id not in (select * from t3);
+
+-- 没学过张三老师课程的学生id
+select s_name
+from student
+where not exists (select * from t3 where student.s_id = t3.s_id);
+
+-- 没学过张三老师课程的学生id
+select s_name
+from student
+left join t3 on student.s_id = t3.s_id
+where t3.s_id is null;
+
+-- 删除临时表
+drop table t1;
+drop table t2;
+drop table t3;
+```
+
+### 12 查询两门及其以上不及格课程的同学的学号，姓名及其平均成绩:
+
+```mysql
+use test0402;
+
+-- 有课程不及格的学生id
+create table t1 as
+select s_id
+from score
+where s_score < 60;
+
+-- 不及格课程总数
+create table t2 as
+select s_id,
+       count(*) cnt
+from t1
+group by s_id;
+
+-- 平均成绩
+create table t3 as
+select s_id,
+       avg(s_score) avg_score
+from score
+group by s_id;
+
+select s.s_id,
+       s.s_name,
+       t.avg_score
+from t2
+join student s on t2.s_id = s.s_id
+join t3 t on s.s_id = t.s_id
+where t2.cnt >= 2;
+
+-- 删除临时表
+drop table t1;
+drop table t2;
+drop table t3;
+```
+
+### 13 查询"李"姓老师的数量:
+
+```mysql
+use test0402;
+
+select
+    count(*) total_teacher
+from
+    teacher
+where
+    substring(t_name, 1, 1) = '李';
+```
+
+### 14 检索"01"课程分数小于60，按分数降序排列的学生信息:
+
+```mysql
+use test0402;
+
+-- 01课程不及格学生id，score
+create table t1 as
+select s_id, s_score
+from score
+where c_id = '01' and s_score < 60;
+
+-- 按01课程分数降序排序
+select s.*, t1.s_score
+from t1
+join student s on t1.s_id = s.s_id
+order by t1.s_score desc;
+
+-- 删除临时表
+drop table t1;
+```
+
+### 15 按平均成绩从高到低显示所有学生的所有课程的成绩以及平均成绩:
+
+```mysql
+use test0402;
+
+select
+    a.s_id,
+    tmp1.s_score chinese,
+    tmp2.s_score math,
+    tmp3.s_score english,
+    round(avg(a.s_score), 2) avgScore
+from
+    score a
+left join
+    (select s_id, s_score from score s1 where c_id = '01') tmp1
+on
+    tmp1.s_id = a.s_id
+left join
+    (select s_id, s_score from score s2 where c_id = '02') tmp2
+on tmp2.s_id = a.s_id
+left join
+    (select s_id, s_score from score s3 where c_id = '03') tmp3
+on tmp3.s_id = a.s_id
+group by
+    a.s_id, tmp1.s_score, tmp2.s_score, tmp3.s_score
+order by
+    avgScore desc;
+```
+
+### 16 查询学过"张三"老师授课的同学的信息:
+
+```mysql
+use test0402;
+
+-- "张三"老师上过的课程的课程id
+create table t1 as
+select
+    course.c_id
+from
+    teacher
+join
+    course
+on
+    teacher.t_id = course.t_id
+where
+    teacher.t_name = '张三';
+
+-- 学过"张三"老师上过的课程的学生id
+create table t2 as
+select
+    distinct s_id
+from
+    score
+join
+    t1
+on
+    score.c_id = t1.c_id;
+
+-- 查询学过"张三"老师授课的同学的信息:
+select
+    student.*
+from
+    student
+join
+    t2
+on
+    student.s_id = t2.s_id;
+
+-- 删除临时表
+drop table t1;
+drop table t2;
+```
+
+### 17 查询没学过"张三"老师授课的同学的信息:
+
+```mysql
+use test0402;
+
+-- "张三"老师上过的课程的课程id
+create table t1 as
+select
+    course.c_id
+from
+    teacher
+join
+    course
+on
+    teacher.t_id = course.t_id
+where
+    teacher.t_name = '张三';
+
+-- 学过"张三"老师上过的课程的学生id
+create table t2 as
+select
+    distinct s_id
+from
+    score
+join
+    t1
+on
+    score.c_id = t1.c_id;
+
+-- 查询没学过"张三"老师授课的同学的信息:
+select
+    student.*
+from
+    student
+left join
+    t2
+on
+    student.s_id = t2.s_id
+where t2.s_id is null;
+
+-- 删除临时表
+drop table t1;
+drop table t2;
+```
+
