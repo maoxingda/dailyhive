@@ -1,4 +1,7 @@
+
+
 # dailyhive
+
 an daily exercise of hive   
 [Hive sql语句必练50题](https://blog.csdn.net/Thomson617/article/details/83212338)
 
@@ -14,7 +17,7 @@ FROM table_reference
 [LIMIT number]
 ```
 
-### 查询"01"课程比"02"课程成绩高的学生的信息及课程分数:
+### 1 查询"01"课程比"02"课程成绩高的学生的信息及课程分数:
 ```mysql
 select a.*,
        b.s_score 01_score,
@@ -31,7 +34,7 @@ from student a
 where b.s_score > c.s_score
 ;
 ```
-### 查询平均成绩大于等于60分的同学的学生编号和学生姓名和平均成绩:
+### 2 查询平均成绩大于等于60分的同学的学生编号和学生姓名和平均成绩:
 ```mysql
 select a.s_id,
        a.s_name,
@@ -46,7 +49,7 @@ group by a.s_id,
 having avg(b.s_score) >= 60
 ;
 ```
-### 查询所有同学的学生编号、学生姓名、选课总数、所有课程的总成绩:
+### 3 查询所有同学的学生编号、学生姓名、选课总数、所有课程的总成绩:
 ```mysql
 select stu.s_id,
        stu.s_name,
@@ -58,7 +61,7 @@ group by stu.s_id, stu.s_name
 order by totalscore desc ;
 ```
 
-### 查询"李"姓老师的数量:
+### 4 查询"李"姓老师的数量:
 ```mysql
 use test0402;
 
@@ -70,7 +73,7 @@ where
     substring(t_name, 1, 1) = '李';
 ```
 
-### 查询学过"张三"老师授课的同学的信息:
+### 5 查询学过"张三"老师授课的同学的信息:
 
 ```mysql
 use test0402;
@@ -114,3 +117,116 @@ drop table t1;
 drop table t2;
 ```
 
+### 6 查询学过编号为"01"并且也学过编号为"02"的课程的同学的信息:
+
+```mysql
+use test0402;
+
+-- 学过01课程和02课程的学生id
+create table t1 as
+select
+    s_id
+from
+    score
+where
+    c_id in ("01", "02")
+group by
+    s_id
+having
+    count(1) = 2;
+
+-- 学生信息
+select
+    *
+from
+    student
+join
+    t1
+on
+    student.s_id = t1.s_id;
+
+-- 删除临时表
+drop table t1;
+```
+
+### 7 查询学过编号为"01"但是没有学过编号为"02"的课程的同学的信息:
+
+```mysql
+use test0402;
+
+-- 学过01课程的学生id
+create table t1 as
+select
+    s_id
+from
+    score
+where
+    c_id = '01';
+
+-- 学过02课程的学生id
+create table t2 as
+select
+    s_id
+from
+    score
+where
+    c_id = '02';
+
+-- 学过01课程没学过02课程的学生id
+create table t3 as
+select
+    t1.s_id
+from
+    t1
+left join
+    t2
+on
+    t1.s_id = t2.s_id
+where
+    t2.s_id is null;
+
+-- 学过01课程没学过02课程的学生信息
+select
+    *
+from
+    student
+join
+    t3
+on
+    student.s_id = t3.s_id;
+
+-- 删除临时表
+drop table t1;
+drop table t2;
+drop table t3;
+```
+
+### 8 查询没有学全所有课程的同学的信息:
+
+```mysql
+use test0402;
+
+-- 有成绩的学生的id、课程总数
+create table t1 as
+select
+    s_id,
+    count(*) num_course
+from
+    score
+group by
+    s_id;
+
+select
+    st.*
+from
+    student st
+join
+    t1
+on
+    st.s_id = t1.s_id
+where
+    t1.num_course < (select count(*) from course);
+
+-- 删除临时表
+drop table t1;
+```

@@ -6,7 +6,7 @@ create table if not exists test0402.course
     c_name string,
     t_id   string
 )
-    row format delimited fields terminated by ',';
+row format delimited fields terminated by ',';
 
 create table if not exists test0402.score
 (
@@ -14,7 +14,7 @@ create table if not exists test0402.score
     c_id    string,
     s_score int
 )
-    row format delimited fields terminated by ',';
+row format delimited fields terminated by ',';
 
 create table if not exists test0402.student
 (
@@ -23,14 +23,14 @@ create table if not exists test0402.student
     s_birth string,
     s_sex   string
 )
-    row format delimited fields terminated by ',';
+row format delimited fields terminated by ',';
 
 create table if not exists test0402.teacher
 (
     t_id   string,
     t_name string
 )
-    row format delimited fields terminated by ',';
+row format delimited fields terminated by ',';
 
 load data local inpath 'test0402_student.csv' into table test0402.student;
 load data local inpath 'test0402_teacher.csv' into table test0402.teacher;
