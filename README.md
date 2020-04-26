@@ -680,3 +680,225 @@ join score s on c.c_id = s.c_id
 group by c.c_id, c_name;
 ```
 
+### 24 查询学生平均成绩及其名次:
+
+```mysql
+use test0402;
+
+select *,
+       row_number() over (order by avg_score desc) rank
+from (
+         select st.s_name,
+                round(avg(s_score), 0) avg_score
+         from score sc
+                  join student st on sc.s_id = st.s_id
+         group by st.s_id, st.s_name
+     ) t1;
+```
+
+### 25 查询各科成绩前三名的记录
+
+```mysql
+use test0402;
+
+select c.c_name, st.s_name, sc.s_score
+from course c
+join score sc on c.c_id = sc.c_id
+join student st on sc.s_id = st.s_id
+where c.c_id = '01'
+order by sc.s_score desc
+limit 3
+;
+```
+
+### 26 查询每门课程被选修的学生数:
+
+```mysql
+use test0402;
+
+select c.c_name, count(distinct s.s_id) cnt
+from course c
+join score s on c.c_id = s.c_id
+group by c.c_id, c.c_name;
+;
+```
+
+### 27 查询出只有两门课程的全部学生的学号和姓名:
+
+```mysql
+use test0402;
+
+select sc.s_id, st.s_name
+from score sc
+join student st on sc.s_id = st.s_id
+group by sc.s_id, st.s_name
+having count(sc.s_score) = 2;
+```
+
+### 27 查询男生、女生人数:
+
+```mysql
+use test0402;
+
+select sum(`if`(s_sex = '男', 1, 0)) man,
+       sum(`if`(s_sex = '女', 1, 0)) woman
+from student;
+```
+
+### 28 查询名字中含有"风"字的学生信息:
+
+```mysql
+use test0402;
+
+select *
+from student
+where s_name like '%风%';
+```
+
+### 29 查询同名同性学生名单，并统计同名人数:
+
+```mysql
+use test0402;
+
+select s_name,
+       s_sex,
+       count(*) cnt
+from student
+group by s_name, s_sex
+having cnt > 1;
+```
+
+### 30 查询1990年出生的学生名单:
+
+```mysql
+use test0402;
+
+select * from student where s_birth like '%1990%';
+```
+
+### 31 查询每门课程的平均成绩，结果按平均成绩降序排列
+
+```mysql
+-- 平均成绩相同时，按课程编号升序排列:
+use test0402;
+
+select c.c_id,
+       round(avg(s.s_score), 1) avg_score
+from course c
+join score s on c.c_id = s.c_id
+group by c.c_id
+order by avg_score desc, c.c_id;
+```
+
+### 32 查询平均成绩大于等于85的所有学生的学号、姓名和平均成绩:
+
+```mysql
+use test0402;
+
+select sc.s_id,
+       s.s_name,
+       round(avg(sc.s_score), 1) avg_score
+from score sc
+join student s on sc.s_id = s.s_id
+group by sc.s_id, s.s_name
+having avg(sc.s_score) >= 85;
+```
+
+### 33 查询课程名称为"数学"，且分数低于60的学生姓名和分数:
+
+```mysql
+use test0402;
+
+select s2.s_name, s_score
+from course
+join score s on course.c_id = s.c_id
+join student s2 on s.s_id = s2.s_id
+where c_name = '数学' and s_score < 60;
+```
+
+### 34 查询所有学生的课程及分数情况:
+
+```mysql
+use test0402;
+
+select s_name,
+       sum(`if`(c.c_name = '语文', s.s_score, 0)) chinese,
+       sum(`if`(c.c_name = '数学', s.s_score, 0)) math,
+       sum(`if`(c.c_name = '英语', s.s_score, 0)) english,
+       sum(s_score) total_score
+from student
+join score s on student.s_id = s.s_id
+join course c on s.c_id = c.c_id
+group by s_name;
+```
+
+### 35 查询任何一门课程成绩在70分以上的学生姓名、课程名称和分数:
+
+```mysql
+use test0402;
+
+select s_name, c_name, s_score
+from student
+join score s on student.s_id = s.s_id
+join course c on s.c_id = c.c_id
+where s_score > 70
+group by s.s_id, s_name, c_name, s_score;
+```
+
+### 36 查询课程不及格的学生:
+
+```mysql
+use test0402;
+
+select student.*,
+       c_name,
+       s_score
+from student
+join score s on student.s_id = s.s_id
+join course c on s.c_id = c.c_id
+where s_score < 60;
+```
+
+### 37 查询课程编号为01且课程成绩在80分以上的学生的学号和姓名:
+
+```mysql
+use test0402;
+
+select s2.s_id, s_name, s_score
+from course
+join score s on course.c_id = s.c_id
+join student s2 on s.s_id = s2.s_id
+where s.c_id = '01' and s_score >= 80;
+```
+
+### 38 求每门课程的学生人数:
+
+```mysql
+use test0402;
+
+select c_name, count(*) cnt
+from course
+join score s on course.c_id = s.c_id
+group by c_name;
+```
+
+### 39 查询选修"张三"老师所授课程的学生中，成绩最高的学生信息及其成绩:
+
+```mysql
+use test0402;
+
+select st.*, c_name, s_score
+from student st
+join
+     (
+         select s_id, c_name, s_score
+         from score s
+         join course c on s.c_id = c.c_id
+         join teacher t on c.t_id = t.t_id
+         where t_name = '张三'
+         order by s_score desc
+         limit 1
+     ) t1
+on st.s_id = t1.s_id
+;
+```
