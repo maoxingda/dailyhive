@@ -6,4 +6,4 @@ select
 from
     teacher
 where
-    substring(t_name, 1, 1) = '李';
+    t_name like '%李%';
