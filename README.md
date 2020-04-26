@@ -533,3 +533,150 @@ drop table t1;
 drop table t2;
 ```
 
+### 18 cid，cname，最高分，最低分，平均分，及格率，中等率，优良率，优秀率:
+
+```mysql
+use test0402;
+
+select c.c_id,
+       c.c_name,
+       t1.maxScore,
+       t1.minScore,
+       t1.avgScore,
+       t1.passRate,
+       t1.modeRate,
+       t1.goodRate,
+       t1.excellentRates
+from course c
+join (
+    select c_id,
+           max(s_score) as                                                       maxScore,
+           min(s_score) as                                                       minScore,
+           round(avg(s_score), 2)                                                avgScore,
+           round(sum(if(s_score >= 60, 1, 0)) / count(c_id), 2)                  passRate,
+           round(sum(if(s_score >= 60 and s_score < 70, 1, 0)) / count(c_id), 2) modeRate,
+           round(sum(if(s_score >= 70 and s_score < 80, 1, 0)) / count(c_id), 2) goodRate,
+           round(sum(if(s_score >= 80 and s_score < 90, 1, 0)) / count(c_id), 2) excellentRates
+    from score
+    group by c_id) t1 on t1.c_id = c.c_id;
+```
+
+### 19 按各科成绩进行排序，并显示排名
+
+```mysql
+use test0402;
+
+(
+    select s1.*,
+           row_number() over (order by s1.s_score desc) Ranking
+    from score s1
+    where s1.c_id = '01'
+    order by Ranking asc
+)
+union all
+(
+    select s2.*,
+           row_number() over (order by s2.s_score desc) Ranking
+    from score s2
+    where s2.c_id = '02'
+    order by Ranking asc
+)
+union all
+(
+    select s3.*,
+           row_number() over (order by s3.s_score desc) Ranking
+    from score s3
+    where s3.c_id = '03'
+    order by Ranking asc
+);
+```
+
+### 20 查询学生的总成绩并进行排名:
+
+```mysql
+use test0402;
+
+select s.s_id,
+       s.s_name,
+       sum(s_score) sum_score,
+       row_number() over (order by sum(s_score) desc) rn
+from score sc
+join student s on sc.s_id = s.s_id
+group by s.s_id, s.s_name
+;
+```
+
+### 21 查询不同老师所教不同课程平均分从高到低显示:
+
+```mysql
+use test0402;
+
+select t.t_name, c.c_name,
+       round(avg(s.s_score), 1) avg_score
+from teacher t
+join course c on t.t_id = c.t_id
+join score s on c.c_id = s.c_id
+group by t.t_id, t.t_name, c.c_id, c.c_name
+order by avg_score desc;
+```
+
+### 22 查询所有课程的成绩第2名到第3名的学生信息及该课程成绩:
+
+```mysql
+use test0402;
+
+(
+    select s2.*,
+           c.c_name,
+           s.s_score `score`
+    from course c
+             join score s on c.c_id = s.c_id
+             join student s2 on s.s_id = s2.s_id
+    where c.c_id = '01'
+    order by s.s_score desc
+    limit 2, 2
+)
+union all
+(
+    select s2.*,
+           c.c_name,
+           s.s_score `score`
+    from course c
+             join score s on c.c_id = s.c_id
+             join student s2 on s.s_id = s2.s_id
+    where c.c_id = '02'
+    order by s.s_score desc
+    limit 2, 2
+)
+union all
+(
+    select s2.*,
+           c.c_name,
+           s.s_score `score`
+    from course c
+             join score s on c.c_id = s.c_id
+             join student s2 on s.s_id = s2.s_id
+    where c.c_id = '03'
+    order by s.s_score desc
+    limit 2, 2
+)
+;
+```
+
+### 23 统计各科成绩各分数段人数：课程编号,课程名称,[100-85],[85-70],[70-60],[0-60]及所占百分比
+
+```mysql
+use test0402;
+
+select c.c_id, c_name,
+       sum(if(s.s_score >= 0 and s.s_score < 60, 1, 0)) sum0_60,
+       round(100 * sum(if(s.s_score >= 0 and s.s_score < 60, 1, 0)) / count(c.c_id), 2) `%0_60`,
+       sum(if(s.s_score >= 60 and s.s_score < 70, 1, 0)) sum60_70,
+       round(100 * sum(if(s.s_score >= 60 and s.s_score < 70, 1, 0)) / count(c.c_id), 2) `%60_70`,
+       sum(if(s.s_score >= 70 and s.s_score < 85, 1, 0)) sum70_85,
+       round(100 * sum(if(s.s_score >= 70 and s.s_score < 85, 1, 0)) / count(c.c_id), 2) `%70_85`
+from course c
+join score s on c.c_id = s.c_id
+group by c.c_id, c_name;
+```
+
