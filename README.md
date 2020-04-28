@@ -902,3 +902,154 @@ join
 on st.s_id = t1.s_id
 ;
 ```
+
+### 40 查询不同课程成绩相同的学生的学生编号、课程编号、学生成绩:
+
+```mysql
+use test0402;
+
+create table t1 as
+select *,
+       rank() over (partition by s_id order by s_score) rk
+from score;
+
+create table t2 as
+select s_id
+from t1
+group by s_id
+having sum(rk) = count(c_id);
+
+select s.*
+from t2
+join score s on t2.s_id = s.s_id;
+
+-- 删除临时表
+drop table t1;
+drop table t2;
+```
+
+### 41 查询每门课程成绩最好的前三名:
+
+```mysql
+use test0402;
+
+(
+    select *
+    from score
+    where c_id = '01'
+    order by s_score desc
+    limit 3
+)
+union all
+(
+    select *
+    from score
+    where c_id = '02'
+    order by s_score desc
+    limit 3
+)
+union all
+(
+    select *
+    from score
+    where c_id = '03'
+    order by s_score desc
+    limit 3
+)
+;
+```
+
+### 42 统计每门课程的学生选修人数（超过5人的课程才统计）:
+
+```mysql
+use test0402;
+
+select c_id,
+       count(distinct s_id) stus
+from score
+group by c_id
+having stus > 5
+order by stus desc, c_id;
+```
+
+### 43 检索至少选修两门课程的学生学号:
+
+```mysql
+use test0402;
+
+select s_id
+from score
+group by s_id
+having count(c_id) >= 2
+;
+```
+
+### 44 查询选修了全部课程的学生信息:
+
+```mysql
+use test0402;
+
+select s_id
+from score
+group by s_id
+having count(c_id) = (select count(c_id) from course);
+```
+
+### 45 查询各学生的年龄(周岁):
+
+```mysql
+use test0402;
+
+select s_name, s_birth,
+       `if`(case when month(`current_date`()) < month(s_birth) then true
+           when month(`current_date`()) = month(s_birth) and day(`current_date`()) < day(s_birth) then true
+           else false end,
+           year(`current_date`()) - year(s_birth) - 1,
+           year(`current_date`()) - year(s_birth)) age
+from student;
+```
+
+### 46 查询本周过生日的学生:
+
+```mysql
+use test0402;
+
+select s_name, s_birth
+from student
+where date_format(s_birth, 'MM-dd')
+    between date_format(date_add(`current_date`(), 1 - dayofweek(`current_date`())), 'mm-dd')
+    and date_format(date_add(`current_date`(), 7 - dayofweek(`current_date`())), 'mm-dd');
+```
+
+### 47 查询下周过生日的学生:
+
+```mysql
+use test0402;
+
+select s_name, s_birth
+from student
+where date_format(s_birth, 'MM-dd')
+    between date_format(date_add(date_add(`current_date`(), 7), 1 - dayofweek(`current_date`())), 'mm-dd')
+    and date_format(date_add(date_add(`current_date`(), 7), 7 - dayofweek(`current_date`())), 'mm-dd');
+```
+
+### 48 查询本月过生日的学生:
+
+```mysql
+use test0402;
+
+select s_name, s_birth
+from student
+where month(`current_date`()) = month(s_birth);
+```
+
+### 49 查询12月过生日的学生:
+
+```mysql
+use test0402;
+
+select s_name, s_birth
+from student
+where month(s_birth) = '12'
+;
+```
